@@ -1,0 +1,21 @@
+crea un sistema que dado un conjunto de datos tabular en csv construya la aproximacion inferior de cada clase.
+El sistema debe ser sencillo, modo POC, encapsulado en funciones sin dependencias complejas, en python, con una capa de visualizacion donde se le pueda cargar el dataset en csv implementada como un html simple visualmente coherente que se sirva desde una fastapi.
+Busca en internet los principios de toughsettheory para que la implementacion sea teoricamente correcta y coherente, ademas busca las formas de visualizacion que mas se ajusten a este tipo de problemas y datasets standars para hacer pruebas pequenhas e incluye estos datasets en un selector para que el usuario pueda hacer pruebas directas iniciales para validar el sistema
+
+EL entorno es con uv, crea un venv local en el directorio e instala todo lo necesario en este entorno
+
+===========
+
+vamos a agregar una nueva visualizacion de diagrama de ven para representar las intersecciones, solapes y relaciones entre las clases.
+
+Has una busqueda profunda de las distintas formas de visualizacion de rough set theory para que me sugieras que mas agregar
+
+Los diatramas y visualizaciones tienen que ser interactivos
+
+===========
+
+vamos a agregar una nueva visualizacion de diagrama de ven para representar las intersecciones, solapes y relaciones entre las clases.
+
+Has una busqueda profunda de las distintas formas de visualizacion de rough set theory para que me sugieras que mas agregar
+
+Los diatramas y visualizaciones tienen que ser interactivos

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rough Set Theory · POC</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <h1>Rough Set Theory <span class="badge">POC</span></h1>
+      <p class="subtitle">Aproximacion inferior y superior de cada clase de decision, segun la teoria de conjuntos aproximados de Pawlak.</p>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Step 1: data source -->
+    <section class="card">
+      <h2>1. Origen de datos</h2>
+      <div class="source-grid">
+        <div class="source-box">
+          <label for="sample-select">Dataset de ejemplo</label>
+          <select id="sample-select"></select>
+          <p id="sample-description" class="hint"></p>
+          <button id="load-sample-btn" class="btn primary">Cargar ejemplo</button>
+        </div>
+        <div class="source-box">
+          <label for="file-input">Subir CSV propio</label>
+          <input type="file" id="file-input" accept=".csv,text/csv" />
+          <p class="hint">La ultima columna se sugiere como atributo de decision.</p>
+          <button id="upload-btn" class="btn">Subir archivo</button>
+        </div>
+      </div>
+      <div id="load-error" class="error-box hidden"></div>
+    </section>
+
+    <!-- Step 2: configuration -->
+    <section class="card hidden" id="config-section">
+      <h2>2. Configuracion del sistema de decision</h2>
+      <div class="config-grid">
+        <div>
+          <label for="decision-select">Atributo de decision (D)</label>
+          <select id="decision-select"></select>
+        </div>
+        <div>
+          <label for="bins-input">Bins para discretizar numericos</label>
+          <input type="number" id="bins-input" min="2" max="20" value="4" />
+        </div>
+        <div class="condition-box">
+          <label>Atributos de condicion (C)</label>
+          <div id="condition-attrs" class="checkbox-list"></div>
+        </div>
+      </div>
+
+      <h3>Vista previa (<span id="preview-count">0</span> filas totales)</h3>
+      <div class="table-scroll">
+        <table id="preview-table"><thead></thead><tbody></tbody></table>
+      </div>
+
+      <button id="analyze-btn" class="btn primary">Analizar (calcular aproximaciones)</button>
+    </section>
+
+    <!-- Step 3: results -->
+    <section class="card hidden" id="results-section">
+      <h2>3. Resultados</h2>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <span class="summary-value" id="summary-universe">-</span>
+          <span class="summary-label">|U| objetos</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-value" id="summary-classes">-</span>
+          <span class="summary-label">Clases de equivalencia U/IND(C)</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-value" id="summary-quality">-</span>
+          <span class="summary-label">Calidad de clasificacion &gamma;<sub>C</sub>(D)</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-value" id="summary-positive">-</span>
+          <span class="summary-label">Region positiva POS<sub>C</sub>(D)</span>
+        </div>
+      </div>
+
+      <h3>Aproximacion por clase de decision</h3>
+      <div class="table-scroll">
+        <table id="classes-table">
+          <thead>
+            <tr>
+              <th>Valor</th>
+              <th>|X|</th>
+              <th>Aprox. inferior</th>
+              <th>Aprox. superior</th>
+              <th>Frontera</th>
+              <th>Exactitud &alpha;<sub>C</sub></th>
+              <th>Composicion</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <h3>Mapa de regiones por objeto</h3>
+      <div class="legend">
+        <span><i class="dot lower"></i> Aprox. inferior (certeza)</span>
+        <span><i class="dot boundary"></i> Frontera (ambiguo)</span>
+        <span><i class="dot negative"></i> Region negativa (excluido)</span>
+      </div>
+      <label for="region-class-select">Visualizar clase:</label>
+      <select id="region-class-select"></select>
+      <div id="region-grid" class="region-grid"></div>
+      <p class="hint">Cada celda es un objeto de U. Pasa el cursor para ver sus valores de atributos.</p>
+    </section>
+
+    <!-- Step 4: class overlap (Venn / UpSet) -->
+    <section class="card hidden" id="overlap-section">
+      <h2>4. Diagrama de conjuntos: solapamiento entre clases</h2>
+      <p class="hint">
+        Las clases de decision (y sus aproximaciones inferiores) son siempre disjuntas: cada objeto tiene un unico valor de decision.
+        Lo unico que puede solaparse es la <strong>aproximacion superior</strong> de cada clase: un objeto cae en C&#772;(X<sub>v</sub>)
+        de cada valor <em>v</em> presente en su clase de equivalencia. Por eso este diagrama compara aproximaciones superiores:
+        las zonas de un solo conjunto son la region positiva (certeza) de esa clase; las zonas compartidas son frontera ambigua entre las clases indicadas.
+      </p>
+      <div id="venn-container" class="venn-container"></div>
+      <div id="overlap-detail" class="overlap-detail hidden"></div>
+    </section>
+
+    <!-- Step 5: rough membership function -->
+    <section class="card hidden" id="membership-section">
+      <h2>5. Funcion de pertenencia rugosa (&mu;)</h2>
+      <p class="hint">
+        Para cada objeto x y cada valor de decision v, &mu;<sub>v</sub>(x) = |[x]<sub>C</sub> &cap; X<sub>v</sub>| / |[x]<sub>C</sub>|.
+        Es la generalizacion continua de las regiones: &mu; = 1 significa certeza (aprox. inferior), &mu; = 0 significa que la clase de
+        equivalencia nunca toca X<sub>v</sub>, y cualquier valor intermedio cuantifica <em>cuan</em> ambiguo es ese objeto particular en la frontera.
+      </p>
+      <label for="membership-class-select">Valor de decision:</label>
+      <select id="membership-class-select"></select>
+      <div id="membership-grid" class="region-grid"></div>
+    </section>
+
+    <!-- Step 6: discernibility matrix -->
+    <section class="card hidden" id="discernibility-section">
+      <h2>6. Matriz de discernibilidad</h2>
+      <p class="hint">
+        Para cada par de objetos con decision distinta se listan los atributos de condicion que los distinguen. Un par con conjunto
+        discernidor <strong>vacio</strong> (resaltado) revela el fenomeno central de la teoria: objetos C-indiscernibles con decisiones
+        distintas, que caen inevitablemente en la frontera. Un atributo que es el <em>unico</em> discernidor de algun par es un atributo
+        <strong>core</strong>: indispensable, presente en todo reducto.
+      </p>
+      <div id="discernibility-unavailable" class="hint hidden"></div>
+      <div id="discernibility-core" class="hint"></div>
+      <div id="discernibility-container" class="table-scroll"></div>
+      <div id="discernibility-detail" class="overlap-detail hidden"></div>
+    </section>
+
+    <!-- Step 7: reduct explorer -->
+    <section class="card hidden" id="reducts-section">
+      <h2>7. Explorador de reductos</h2>
+      <p class="hint">
+        Compara &gamma;<sub>C</sub>(D) entre distintos subconjuntos de atributos de condicion. Un reducto es un subconjunto minimal que
+        preserva la misma calidad de clasificacion que el conjunto completo. Haz click en una fila para aplicar ese subconjunto en la
+        configuracion y re-analizar.
+      </p>
+      <button id="explore-reducts-btn" class="btn primary">Explorar reductos</button>
+      <p id="reducts-note" class="hint"></p>
+      <div id="reducts-container" class="table-scroll"></div>
+    </section>
+
+    <!-- Step 8: granule treemap -->
+    <section class="card hidden" id="granule-treemap-section">
+      <h2>8. Mapa de granulos (treemap)</h2>
+      <p class="hint">
+        Cada granulo es una clase de equivalencia U/IND(C). El area de cada bloque es proporcional a su tamano; las franjas internas
+        muestran la composicion por valor de decision. Bloques de un solo color son granulos "puros" (parte de la region positiva);
+        bloques multicolor son granulos en frontera.
+      </p>
+      <div id="granule-treemap" class="treemap"></div>
+      <div id="granule-detail" class="overlap-detail hidden"></div>
+    </section>
+
+    <!-- Step 9: granule graph -->
+    <section class="card hidden" id="granule-graph-section">
+      <h2>9. Grafo de granulos</h2>
+      <p class="hint">
+        Grafo bipartito: los granulos (clases de equivalencia, izquierda) conectados a los valores de decision (derecha) a los que
+        aportan objetos. El grosor de cada arista es proporcional a cuantos objetos del granulo tienen esa decision. Un granulo
+        conectado a un unico valor es puro; conectado a varios es frontera compartida.
+      </p>
+      <div id="granule-graph" class="venn-container"></div>
+    </section>
+
+  </main>
+
+
+  <div id="tooltip" class="tooltip hidden"></div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
